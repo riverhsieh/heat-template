@@ -7,7 +7,7 @@
 heat_template_version: 2013-05-23
 
 description: >
-  Hello world HOT template that just defines a single server.
+  HOT template that just defines two single servers.
   Contains just base features to verify base HOT support.
 
 parameters:
