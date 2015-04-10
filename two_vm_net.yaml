@@ -1,0 +1,199 @@
+#
+# This is a hello world HOT template just defining a single compute
+# server.
+#
+heat_template_version: 2013-05-23
+
+description: >
+  Hello world HOT template that just defines a single server.
+  Contains just base features to verify base HOT support.
+
+parameters:
+  key_name:
+    type: string
+    description: Name of an existing key pair to use for the server
+    default: river-key-pair
+    constraints:
+      - custom_constraint: nova.keypair
+  flavor:
+    type: string
+    description: Flavor for the server to be created
+    default: m1.medium
+    constraints:
+      - allowed_values: [m1.tiny, m1.small, m1.medium, m1.large]
+        description: Value
+#      - custom_constraint: nova.flavor
+  image:
+    type: string
+    description: Image ID or image name to use for the server
+    default: 9f1c36bb-59cd-492a-a71d-650af07d647e
+    constraints:
+      - custom_constraint: glance.image
+  public_net_id:
+    type: string
+    description: >
+      ID of public network for which floating IP addresses will be allocated
+    default: 8fda0fe4-c9ac-4421-a9da-b163b13786f9
+  private_net_id:
+    type: string
+    description: >
+      ID of private network into which servers get deployed
+    default: 0cb665ef-b97b-4480-945e-693ef1cc1623
+  private_subnet_id:
+    type: string
+    description: >
+      ID of private sub network into which servers get deployed
+    default: c3fdd700-ab27-4442-a84e-429ba9c1ddad
+
+  proxy_ip_port:
+    type: string
+    description: >
+      Firewall proxy
+    default: 10.110.15.60:8080
+
+#  admin_pass:
+#    type: string
+#    description: Admin password
+#    hidden: true
+#    constraints:
+#      - length: { min: 6, max: 8 }
+#        description: Password length must be between 6 and 8 characters
+#      - allowed_pattern: "[a-zA-Z0-9]+"
+#        description: Password must consist of characters and numbers only
+#      - allowed_pattern: "[A-Z]+[a-zA-Z0-9]*"
+#        description: Password must start with an uppercase character
+#  db_port:
+#    type: number
+#    description: Database port number
+#    default: 50000
+#    constraints:
+#      - range: { min: 40000, max: 60000 }
+#        description: Port number must be between 40000 and 60000
+
+resources:
+  server-01:
+    type: OS::Nova::Server
+    properties:
+      name: server-01
+      key_name: { get_param: key_name }
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      networks:
+        - port: { get_resource: server-01_port }
+#      admin_pass: { get_param: admin_pass }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            #!/bin/bash
+            export http_proxy=http://proxy_ip
+            export https_proxy=https://proxy_ip
+            echo 127.0.1.1 server-01 >> /etc/hosts
+            echo 'Acquire::http::Proxy "http://proxy_ip";' > /etc/apt/apt.conf.d/01proxy
+            echo 'Acquire::https::Proxy "https://proxy_ip";' >> /etc/apt/apt.conf.d/01proxy
+            apt-get update
+            apt-get install -y apt-transport-https git socat connect-proxy
+            apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9
+            echo deb https://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list
+            apt-get update
+            apt-get install -y lxc-docker
+          params:
+            proxy_ip: { get_param: proxy_ip_port }
+
+  server-02:
+    type: OS::Nova::Server
+    properties:
+      name: server-02
+      key_name: { get_param: key_name }
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      networks:
+        - port: { get_resource: server-02_port }
+#      admin_pass: { get_param: admin_pass }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            #!/bin/bash
+            export http_proxy=http://proxy_ip
+            export https_proxy=https://proxy_ip
+            echo 127.0.1.1 server-02 >> /etc/hosts
+            echo 'Acquire::http::Proxy "http://proxy_ip";' > /etc/apt/apt.conf.d/01proxy
+            echo 'Acquire::https::Proxy "https://proxy_ip";' >> /etc/apt/apt.conf.d/01proxy
+            apt-get update
+            apt-get install -y apt-transport-https git socat connect-proxy
+            apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9
+            echo deb https://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list
+            apt-get update
+            apt-get install -y lxc-docker
+          params:
+            proxy_ip: { get_param: proxy_ip_port }
+        
+#        str_replace:
+#          template: |
+#            #!/bin/bash
+#            echo db_port
+#          params:
+#            db_port: { get_param: db_port }
+
+
+  server-01_port:
+    type: OS::Neutron::Port
+    properties:
+        network_id: { get_param: private_net_id }
+        fixed_ips:
+          - subnet_id: { get_param: private_subnet_id }
+        security_groups: [{ get_resource: server_security_group }]
+
+  server-01_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+        floating_network_id: { get_param: public_net_id }
+        port_id: { get_resource: server-01_port }
+
+  server-02_port:
+    type: OS::Neutron::Port
+    properties:
+        network_id: { get_param: private_net_id }
+        fixed_ips:
+          - subnet_id: { get_param: private_subnet_id }
+        security_groups: [{ get_resource: server_security_group }]
+
+  server-02_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+        floating_network_id: { get_param: public_net_id }
+        port_id: { get_resource: server-02_port }
+
+  server_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+        description: Add security group rules for server
+        name: security-group
+        rules:
+          - remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+            port_range_min: 22
+            port_range_max: 22
+          - remote_ip_prefix: 0.0.0.0/0
+            protocol: icmp
+outputs:
+  server-01_private_ip:
+    description: IP address of server-01 in private network
+    value: { get_attr: [ server-01, first_address ] }
+  server-01_public_ip:
+    description: Floating IP address of server1 in public network
+    value: { get_attr: [ server-01_floating_ip, floating_ip_address ] }
+
+  server-02_private_ip:
+    description: IP address of server-02 in private network
+    value: { get_attr: [ server-02, first_address ] }
+  server-02_public_ip:
+    description: Floating IP address of server1 in public network
+    value: { get_attr: [ server-02_floating_ip, floating_ip_address ] }
+#  server_networks:
+#    description: The networks of the deployed server
+#    value: { get_attr: [server, networks] }
+
+#         - build-essential
+#         - pastebinit
