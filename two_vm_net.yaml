@@ -1,6 +1,8 @@
 #
-# This is a hello world HOT template just defining a single compute
-# server.
+# This is a HOT template just defining twoa single compute
+# servers and a security group.
+# The two servers will install docker package after the VM 
+# initialized
 #
 heat_template_version: 2013-05-23
 
@@ -51,25 +53,6 @@ parameters:
       Firewall proxy
     default: 10.110.15.60:8080
 
-#  admin_pass:
-#    type: string
-#    description: Admin password
-#    hidden: true
-#    constraints:
-#      - length: { min: 6, max: 8 }
-#        description: Password length must be between 6 and 8 characters
-#      - allowed_pattern: "[a-zA-Z0-9]+"
-#        description: Password must consist of characters and numbers only
-#      - allowed_pattern: "[A-Z]+[a-zA-Z0-9]*"
-#        description: Password must start with an uppercase character
-#  db_port:
-#    type: number
-#    description: Database port number
-#    default: 50000
-#    constraints:
-#      - range: { min: 40000, max: 60000 }
-#        description: Port number must be between 40000 and 60000
-
 resources:
   server-01:
     type: OS::Nova::Server
@@ -80,7 +63,6 @@ resources:
       flavor: { get_param: flavor }
       networks:
         - port: { get_resource: server-01_port }
-#      admin_pass: { get_param: admin_pass }
       user_data_format: RAW
       user_data:
         str_replace:
@@ -109,7 +91,6 @@ resources:
       flavor: { get_param: flavor }
       networks:
         - port: { get_resource: server-02_port }
-#      admin_pass: { get_param: admin_pass }
       user_data_format: RAW
       user_data:
         str_replace:
@@ -129,14 +110,6 @@ resources:
           params:
             proxy_ip: { get_param: proxy_ip_port }
         
-#        str_replace:
-#          template: |
-#            #!/bin/bash
-#            echo db_port
-#          params:
-#            db_port: { get_param: db_port }
-
-
   server-01_port:
     type: OS::Neutron::Port
     properties:
@@ -191,9 +164,3 @@ outputs:
   server-02_public_ip:
     description: Floating IP address of server1 in public network
     value: { get_attr: [ server-02_floating_ip, floating_ip_address ] }
-#  server_networks:
-#    description: The networks of the deployed server
-#    value: { get_attr: [server, networks] }
-
-#         - build-essential
-#         - pastebinit
