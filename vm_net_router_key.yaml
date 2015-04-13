@@ -1,6 +1,7 @@
 #
 # This is a HOT template just defining two single compute
 # servers and create a router and private network and security group.
+# The key pairs will be input as a .pem file.
 # The two servers will install docker package after the VM 
 # initialized
 #
@@ -8,7 +9,8 @@ heat_template_version: 2013-05-23
 
 description: >
   HOT template that just defines two single servers.
-  And create a router and private network and security group
+  And create a router and private network and security group.
+  The key pairs will be input as a .pem file.
   Contains just base features to verify base HOT support.
 
 parameters:
@@ -65,6 +67,16 @@ parameters:
     type: string
     description: Name of router to be created
     default: penda_router
+
+  ssh_key_pem:
+    type: string
+    description: >
+      Name of router to be created
+      -----BEGIN RSA PRIVATE KEY-----\n
+      MIIEpAIBAAKCAQEAvNyff29+kQ/BJ2KkO/hBodXW2zvJNHzSI3C2LD32deYCnTWa\n
+      GCZmpzTpzXjA2Q74iXyIpSkURGuJ5t0vb4+bE3Z6zciTV4xsocNtmtZYAOGtPstA\n
+      ----------------------------------------------------------------\n
+      -----END RSA PRIVATE KEY-----
 
 #  private_net_id:
 #    type: string
@@ -161,8 +173,12 @@ resources:
             sed -i 's/127.0.0.1:3128/proxy_ip/' /etc/default/docker
             sed -i 's/^#export http/export http/' /etc/default/docker
             service docker restart
+            echo -e "ssh_pem_01" > /home/ubuntu/penda_key.pem
+            chown ubuntu:ubuntu /home/ubuntu/penda_key.pem
+            chmod 600 /home/ubuntu/penda_key.pem 
           params:
             proxy_ip: { get_param: proxy_ip_port }
+            ssh_pem_01: { get_param: ssh_key_pem }
 
   server-02:
     type: OS::Nova::Server
@@ -193,8 +209,12 @@ resources:
             sed -i 's/127.0.0.1:3128/proxy_ip/' /etc/default/docker
             sed -i 's/^#export http/export http/' /etc/default/docker
             service docker restart
+            echo -e "ssh_pem_02" > /home/ubuntu/penda_key.pem
+            chown ubuntu:ubuntu /home/ubuntu/penda_key.pem
+            chmod 600 /home/ubuntu/penda_key.pem 
           params:
             proxy_ip: { get_param: proxy_ip_port }
+            ssh_pem_02: { get_param: ssh_key_pem }
         
 #        str_replace:
 #          template: |
