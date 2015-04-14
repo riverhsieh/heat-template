@@ -28,24 +28,24 @@ parameters:
   image:
     type: string
     description: Image ID or image name to use for the server
-    default: 9f1c36bb-59cd-492a-a71d-650af07d647e
+    default: ff5f7be8-4485-4c98-9299-d3675342e1da
     constraints:
       - custom_constraint: glance.image
   public_net_id:
     type: string
     description: >
       ID of public network for which floating IP addresses will be allocated
-    default: 8fda0fe4-c9ac-4421-a9da-b163b13786f9
+    default: 932975db-3afc-40d7-92c1-40f48c7948ef
   private_net_id:
     type: string
     description: >
       ID of private network into which servers get deployed
-    default: 0cb665ef-b97b-4480-945e-693ef1cc1623
+    default: 8ec9e3c3-c968-4337-9948-086b08086a1d
   private_subnet_id:
     type: string
     description: >
       ID of private sub network into which servers get deployed
-    default: c3fdd700-ab27-4442-a84e-429ba9c1ddad
+    default: 32f283be-188e-4b52-abe1-17664d4607cb
 
   proxy_ip_port:
     type: string

@@ -29,14 +29,14 @@ parameters:
   image:
     type: string
     description: Image ID or image name to use for the server
-    default: 9f1c36bb-59cd-492a-a71d-650af07d647e
+    default: ff5f7be8-4485-4c98-9299-d3675342e1da
     constraints:
       - custom_constraint: glance.image
   public_net:
     type: string
     description: >
       ID of public network for which floating IP addresses will be allocated
-    default: 8fda0fe4-c9ac-4421-a9da-b163b13786f9
+    default: 932975db-3afc-40d7-92c1-40f48c7948ef
   private_net_name:
     type: string
     description: Name of private network to be created
