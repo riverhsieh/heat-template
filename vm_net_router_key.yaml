@@ -2,8 +2,9 @@
 # This is a HOT template just defining two single compute
 # servers and create a router and private network and security group.
 # The key pairs will be input as a .pem file.
-# The two servers will install docker package after the VM 
-# initialized
+#
+# The two servers will install docker packages and heat-client environment 
+# for heat deployment 
 #
 heat_template_version: 2013-05-23
 
@@ -173,6 +174,9 @@ resources:
             sed -i 's/127.0.0.1:3128/proxy_ip/' /etc/default/docker
             sed -i 's/^#export http/export http/' /etc/default/docker
             service docker restart
+            apt-get install python2.7-dev
+            apt-get install python-pip
+            pip --proxy http://proxy_ip install python-heatclient
             echo -e "ssh_pem_01" > /home/ubuntu/penda_key.pem
             chown ubuntu:ubuntu /home/ubuntu/penda_key.pem
             chmod 600 /home/ubuntu/penda_key.pem 
