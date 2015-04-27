@@ -162,8 +162,8 @@ resources:
             sed -i 's/127.0.0.1:3128/proxy_ip/' /etc/default/docker
             sed -i 's/^#export http/export http/' /etc/default/docker
             service docker restart
-            apt-get install python2.7-dev
-            apt-get install python-pip
+            apt-get install -y python2.7-dev
+            apt-get install -y python-pip
             pip --proxy http://proxy_ip install python-heatclient
           params:
             proxy_ip: { get_param: proxy_ip_port }
