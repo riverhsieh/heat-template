@@ -151,8 +151,10 @@ resources:
             export http_proxy=http://proxy_ip
             export https_proxy=https://proxy_ip
             echo 127.0.1.1 server-01 >> /etc/hosts
-            echo 'Acquire::http::Proxy "http://proxy_ip";' > /etc/apt/apt.conf.d/01proxy
-            echo 'Acquire::https::Proxy "https://proxy_ip";' >> /etc/apt/apt.conf.d/01proxy
+            cat >/etc/apt/apt.conf.d/01proxy <<EOF
+            Acquire::http::Proxy "http://proxy_ip";
+            Acquire::https::Proxy "https://proxy_ip";
+            EOF
             apt-get update
             apt-get install -y apt-transport-https git socat connect-proxy
             apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9
@@ -165,6 +167,18 @@ resources:
             apt-get install -y python2.7-dev
             apt-get install -y python-pip
             pip --proxy http://proxy_ip install python-heatclient
+            cat >/home/ubuntu/openrc <<EOF
+            #!/bin/sh
+            export LC_ALL=C
+            export OS_NO_CACHE='true'
+            export OS_TENANT_NAME='admin'
+            export OS_USERNAME='admin'
+            export OS_PASSWORD='admin'
+            export OS_AUTH_URL='http://192.168.0.3:5000/v2.0/'
+            export OS_AUTH_STRATEGY='keystone'
+            EOF
+            chown ubuntu:ubuntu /home/ubuntu/openrc
+            chmod 644 /home/ubuntu/openrc
           params:
             proxy_ip: { get_param: proxy_ip_port }
 
