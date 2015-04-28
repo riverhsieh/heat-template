@@ -1,0 +1,54 @@
+heat_template_version: 2013-05-23
+ 
+description: Template that installs a wordpress server and supporting MySQL database running on separate servers
+ 
+parameters:
+  image:
+    type: string
+    label: Image name or ID
+    description: Image to be used for server. Please use an Ubuntu based image.
+    default: ff5f7be8-4485-4c98-9299-d3675342e1da
+  flavor:
+    type: string
+    label: Flavor
+    description: Type of instance (flavor) to be used on the compute instance.
+    default: m1.small
+  key:
+    type: string
+    label: Key name
+    description: Name of key-pair to be installed on the compute instance.
+    default: river-key-pair
+  private_network:
+    type: string
+    label: Private network name or ID
+    description: Network to attach server to.
+    default: 8ec9e3c3-c968-4337-9948-086b08086a1d
+  proxy_ip_port:
+    type: string
+    description: Firewall proxy
+    default: 10.110.15.60:8080
+ 
+resources:
+  mysql:
+    type: lib/mysql.yaml
+    properties:
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key: { get_param: key }
+      private_network: { get_param: private_network }
+      proxy_ip_port: { get_param: proxy_ip_port }
+      database_name: wordpress
+      database_user: wordpress_user
+ 
+  wordpress:
+    type: lib/wordpress.yaml
+    properties:
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key: { get_param: key }
+      private_network: { get_param: private_network }
+      proxy_ip_port: { get_param: proxy_ip_port }
+      mysql_server: { get_attr: [mysql, ip] }
+      database_name: wordpress
+      database_user: wordpress_user
+      database_password: { get_attr: [mysql, database_password] }
