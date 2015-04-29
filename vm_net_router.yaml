@@ -50,6 +50,11 @@ parameters:
     type: string
     description: Private network address (CIDR notation)
     default: 192.168.200.0/24
+  private_net_dns:
+    type: comma_delimited_list
+    label: DNS nameservers
+    description: Comma separated list of DNS nameservers for the private network.
+    default: '8.8.4.4,8.8.8.8'
   private_net_gateway:
     type: string
     description: Private network gateway address
@@ -115,6 +120,7 @@ resources:
       name: { get_param: private_subnet_name }
       network_id: { get_resource: private_net }
       cidr: { get_param: private_net_cidr }
+      dns_nameservers: { get_param: private_net_dns }
       gateway_ip: { get_param: private_net_gateway }
       allocation_pools:
         - start: { get_param: private_net_pool_start }
@@ -179,6 +185,28 @@ resources:
             EOF
             chown ubuntu:ubuntu /home/ubuntu/openrc
             chmod 644 /home/ubuntu/openrc
+            cat >/tmp/nsenter.sh <<EOF
+            #!/bin/sh
+            cd /tmp
+            curl https://www.kernel.org/pub/linux/utils/util-linux/v2.24/util-linux-2.24.tar.gz | tar -zxf-
+            cd util-linux-2.24
+            ./configure --without-ncurses
+            make nsenter
+            cp nsenter /usr/local/bin
+            EOF
+            chmod 755 /tmp/nsenter.sh
+            ./tmp/nsenter.sh
+            cd /home/ubuntu
+            git config --global http.proxy http://proxy_ip
+            git config --global https.proxy https://proxy_ip
+            git clone https://github.com/jpetazzo/pipework.git
+            cat >/home/ubuntu/docker_enter <<EOF
+            #!/bin/sh
+            PID=\$(docker inspect --format '{{.State.Pid}}' my_container_id)
+            nsenter --target \$PID --mount --uts --ipc --net --pid
+            EOF
+            chown ubuntu:ubuntu /home/ubuntu/docker_enter
+            chmod 644 /home/ubuntu/docker_enter
           params:
             proxy_ip: { get_param: proxy_ip_port }
 

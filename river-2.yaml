@@ -32,19 +32,7 @@ packages:
 #  * the INSTANCE_ID variable will be set to the current instance id.
 #  * you can use 'cloud-init-boot-per' command to help only run once
 bootcmd:
- - echo 127.0.1.1 river-2 >> /etc/hosts
-
-runcmd:
-- export http_proxy=http://10.110.15.60:8080
-- export https_proxy=https://10.110.15.60:8080
-- apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9
-- echo deb https://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list
-- apt-get update
-- apt-get install -y lxc-docker
-- sed -i 's/127.0.0.1:3128/10.110.15.60:8080/' /etc/default/docker
-- sed -i 's/^#export http/export http/' /etc/default/docker
-- service docker restart
-- pip --proxy http://10.110.15.60:8080 install python-heatclient
+ - echo 127.0.1.1 river-3 >> /etc/hosts
 
 write_files:
 - content: |
@@ -61,5 +49,36 @@ write_files:
     export OS_AUTH_URL='http://192.168.0.3:5000/v2.0/'
     export OS_AUTH_STRATEGY='keystone'
   path: /home/ubuntu/openrc
-  owner: ubuntu:ubuntu
   permissions: '0644'
+- content:  |
+    #!/bin/sh
+    cd /tmp
+    curl https://www.kernel.org/pub/linux/utils/util-linux/v2.24/util-linux-2.24.tar.gz | tar -zxf-
+    cd util-linux-2.24
+    ./configure --without-ncurses
+    make nsenter
+    cp nsenter /usr/local/bin
+  path: /home/ubuntu/nsenter.sh
+  permissions: '0755'
+- content: |
+    #!/bin/sh
+    PID=$(docker inspect --format '{{.State.Pid}}' my_container_id)
+    nsenter --target $PID --mount --uts --ipc --net --pid
+  path: /home/ubuntu/docker_enter
+  permissions: '0644'
+
+runcmd:
+- export http_proxy=http://10.110.15.60:8080
+- export https_proxy=https://10.110.15.60:8080
+- apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9
+- echo deb https://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list
+- apt-get update
+- apt-get install -y lxc-docker
+- sed -i 's/127.0.0.1:3128/10.110.15.60:8080/' /etc/default/docker
+- sed -i 's/^#export http/export http/' /etc/default/docker
+- service docker restart
+- pip --proxy http://10.110.15.60:8080 install python-heatclient
+- git config --global http.proxy http://10.110.15.60:8080
+- git config --global https.proxy https://10.110.15.60:8080
+- git clone https://github.com/jpetazzo/pipework.git
+- /home/ubuntu/nsenter.sh
