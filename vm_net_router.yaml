@@ -185,7 +185,7 @@ resources:
             EOF
             chown ubuntu:ubuntu /home/ubuntu/openrc
             chmod 644 /home/ubuntu/openrc
-            cat >/tmp/nsenter.sh <<EOF
+            cat >/home/ubuntu/nsenter.sh <<EOF
             #!/bin/sh
             cd /tmp
             curl https://www.kernel.org/pub/linux/utils/util-linux/v2.24/util-linux-2.24.tar.gz | tar -zxf-
@@ -194,8 +194,9 @@ resources:
             make nsenter
             cp nsenter /usr/local/bin
             EOF
+            chown ubuntu:ubuntu /home/ubuntu/nsenter.sh
             chmod 755 /tmp/nsenter.sh
-            ./tmp/nsenter.sh
+            . /home/ubuntu/nsenter.sh
             cd /home/ubuntu
             git config --global http.proxy http://proxy_ip
             git config --global https.proxy https://proxy_ip

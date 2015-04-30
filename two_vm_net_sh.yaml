@@ -1,0 +1,151 @@
+#
+# This is a HOT template just defining twoa single compute
+# servers and a security group.
+# The two servers will install docker package after the VM 
+# initialized
+#
+heat_template_version: 2013-05-23
+
+description: >
+  HOT template that just defines two single servers.
+  Contains just base features to verify base HOT support.
+
+parameters:
+  key_name:
+    type: string
+    description: Name of an existing key pair to use for the server
+    default: river-key-pair
+    constraints:
+      - custom_constraint: nova.keypair
+  flavor:
+    type: string
+    description: Flavor for the server to be created
+    default: m1.medium
+    constraints:
+      - allowed_values: [m1.tiny, m1.small, m1.medium, m1.large]
+        description: Value
+#      - custom_constraint: nova.flavor
+  image:
+    type: string
+    description: Image ID or image name to use for the server
+    default: ff5f7be8-4485-4c98-9299-d3675342e1da
+    constraints:
+      - custom_constraint: glance.image
+  public_net_id:
+    type: string
+    description: >
+      ID of public network for which floating IP addresses will be allocated
+    default: 932975db-3afc-40d7-92c1-40f48c7948ef
+  private_net_id:
+    type: string
+    description: >
+      ID of private network into which servers get deployed
+    default: 8ec9e3c3-c968-4337-9948-086b08086a1d
+  private_subnet_id:
+    type: string
+    description: >
+      ID of private sub network into which servers get deployed
+    default: 32f283be-188e-4b52-abe1-17664d4607cb
+
+  proxy_ip_port:
+    type: string
+    description: >
+      Firewall proxy
+    default: 10.110.15.60:8080
+
+resources:
+  server-01:
+    type: OS::Nova::Server
+    properties:
+      name: server-01
+      key_name: { get_param: key_name }
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      networks:
+        - port: { get_resource: server-01_port }
+      user_data_format: RAW
+      user_data:
+        get_file: script/init_script.sh
+
+  server-02:
+    type: OS::Nova::Server
+    properties:
+      name: server-02
+      key_name: { get_param: key_name }
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      networks:
+        - port: { get_resource: server-02_port }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            #!/bin/bash
+            export http_proxy=http://proxy_ip
+            export https_proxy=https://proxy_ip
+            echo 127.0.1.1 server-02 >> /etc/hosts
+            echo 'Acquire::http::Proxy "http://proxy_ip";' > /etc/apt/apt.conf.d/01proxy
+            echo 'Acquire::https::Proxy "https://proxy_ip";' >> /etc/apt/apt.conf.d/01proxy
+            apt-get update
+            apt-get install -y apt-transport-https git socat connect-proxy
+            apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9
+            echo deb https://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list
+            apt-get update
+            apt-get install -y lxc-docker
+          params:
+            proxy_ip: { get_param: proxy_ip_port }
+        
+  server-01_port:
+    type: OS::Neutron::Port
+    properties:
+        network_id: { get_param: private_net_id }
+        fixed_ips:
+          - subnet_id: { get_param: private_subnet_id }
+        security_groups: [{ get_resource: server_security_group }]
+
+  server-01_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+        floating_network_id: { get_param: public_net_id }
+        port_id: { get_resource: server-01_port }
+
+  server-02_port:
+    type: OS::Neutron::Port
+    properties:
+        network_id: { get_param: private_net_id }
+        fixed_ips:
+          - subnet_id: { get_param: private_subnet_id }
+        security_groups: [{ get_resource: server_security_group }]
+
+  server-02_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+        floating_network_id: { get_param: public_net_id }
+        port_id: { get_resource: server-02_port }
+
+  server_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+        description: Add security group rules for server
+        name: security-group
+        rules:
+          - remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+            port_range_min: 22
+            port_range_max: 22
+          - remote_ip_prefix: 0.0.0.0/0
+            protocol: icmp
+outputs:
+  server-01_private_ip:
+    description: IP address of server-01 in private network
+    value: { get_attr: [ server-01, first_address ] }
+  server-01_public_ip:
+    description: Floating IP address of server1 in public network
+    value: { get_attr: [ server-01_floating_ip, floating_ip_address ] }
+
+  server-02_private_ip:
+    description: IP address of server-02 in private network
+    value: { get_attr: [ server-02, first_address ] }
+  server-02_public_ip:
+    description: Floating IP address of server1 in public network
+    value: { get_attr: [ server-02_floating_ip, floating_ip_address ] }
