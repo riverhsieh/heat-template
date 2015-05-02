@@ -10,12 +10,18 @@ apt_https_proxy: https://10.110.15.60:8080
 apt_ftp_proxy: http://10.110.15.60:8080
 
 apt_update: true
+#manage-resolv-conf: true
+
+#resolv_conf:
+#  nameservers: ['8.8.8.8', '10.110.15.1']
+# options:
+#    rotate: true
+#    timeout: 1
 
 packages:
 - apt-transport-https
-- build-essential
 - python2.7-dev
-- python-pip
+- python-virtualenv
 - pastebinit
 - git
 - socat
@@ -32,14 +38,17 @@ packages:
 #  * the INSTANCE_ID variable will be set to the current instance id.
 #  * you can use 'cloud-init-boot-per' command to help only run once
 bootcmd:
- - echo 127.0.1.1 river-3 >> /etc/hosts
+  - echo 127.0.1.1 river-2 >> /etc/hosts
 
 write_files:
-- content: |
+- path: /etc/apt/apt.conf.d/01proxy
+  owner: root:root
+  content: |
     Acquire::http::Proxy "http://10.110.15.60:8080";
     Acquire::https::Proxy "https://10.110.15.60:8080";
-  path: /etc/apt/apt.conf.d/01proxy
-- content: |
+- path: /home/ubuntu/openrc
+  permissions: '0644'
+  content: |
     #!/bin/sh
     export LC_ALL=C
     export OS_NO_CACHE='true'
@@ -48,24 +57,33 @@ write_files:
     export OS_PASSWORD='admin'
     export OS_AUTH_URL='http://192.168.0.3:5000/v2.0/'
     export OS_AUTH_STRATEGY='keystone'
-  path: /home/ubuntu/openrc
-  permissions: '0644'
-- content:  |
+- path: /home/ubuntu/nsenter.sh
+  permissions: '0755'
+  content:  |
     #!/bin/sh
-    cd /tmp
     curl https://www.kernel.org/pub/linux/utils/util-linux/v2.24/util-linux-2.24.tar.gz | tar -zxf-
     cd util-linux-2.24
     ./configure --without-ncurses
     make nsenter
-    cp nsenter /usr/local/bin
-  path: /home/ubuntu/nsenter.sh
-  permissions: '0755'
-- content: |
+    sudo cp nsenter /usr/local/bin
+    cd ..
+    git config --global http.proxy http://10.110.15.60:8080
+    git config --global https.proxy https://10.110.15.60:8080
+    git clone https://github.com/jpetazzo/pipework.git
+- path: /home/ubuntu/docker_enter
+  permissions: '0644'
+  content: |
     #!/bin/sh
     PID=$(docker inspect --format '{{.State.Pid}}' my_container_id)
     nsenter --target $PID --mount --uts --ipc --net --pid
-  path: /home/ubuntu/docker_enter
+- path: /home/ubuntu/python_venv
   permissions: '0644'
+  content: |
+    #!/bin/sh
+    virtualenv venv
+    source venv/bin/activate
+    pip --proxy http://10.110.15.60:8080 install python-heatclient
+    pip --proxy http://10.110.15.60:8080 install python-novaclient
 
 runcmd:
 - export http_proxy=http://10.110.15.60:8080
@@ -77,8 +95,7 @@ runcmd:
 - sed -i 's/127.0.0.1:3128/10.110.15.60:8080/' /etc/default/docker
 - sed -i 's/^#export http/export http/' /etc/default/docker
 - service docker restart
-- pip --proxy http://10.110.15.60:8080 install python-heatclient
-- git config --global http.proxy http://10.110.15.60:8080
-- git config --global https.proxy https://10.110.15.60:8080
-- git clone https://github.com/jpetazzo/pipework.git
-- /home/ubuntu/nsenter.sh
+#- /home/ubuntu/nsenter.sh
+- chown -R ubuntu:ubuntu /home/ubuntu
+- echo export http_proxy=http://10.110.15.60:8080 >> /etc/profile
+- echo export https_proxy=https://10.110.15.60:8080 >> /etc/profile
