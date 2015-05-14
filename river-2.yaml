@@ -84,6 +84,7 @@ write_files:
     source venv/bin/activate
     pip --proxy http://10.110.15.60:8080 install python-heatclient
     pip --proxy http://10.110.15.60:8080 install python-novaclient
+    pip --proxy http://10.110.15.60:8080 install python-neutronclient
 
 runcmd:
 - export http_proxy=http://10.110.15.60:8080
@@ -99,3 +100,5 @@ runcmd:
 - chown -R ubuntu:ubuntu /home/ubuntu
 - echo export http_proxy=http://10.110.15.60:8080 >> /etc/profile
 - echo export https_proxy=https://10.110.15.60:8080 >> /etc/profile
+- echo export PIP_REQUIRE_VIRTUALENV=true >> /etc/profile
+- echo export PIP_RESPECT_VIRTUALENV=true >> /etc/profile
