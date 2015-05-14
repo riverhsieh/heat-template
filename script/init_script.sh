@@ -60,6 +60,7 @@ virtualenv venv
 source venv/bin/activate
 pip --proxy $http_proxy install python-heatclient
 pip --proxy $http_proxy install python-novaclient
+pip --proxy $http_proxy install python-neutronclient
 EOF
 chmod 644 /home/ubuntu/python_venv
 
@@ -67,3 +68,5 @@ chown -R ubuntu:ubuntu /home/ubuntu/
 
 echo export http_proxy=$http_proxy >> /etc/profile
 echo export https_proxy=$https_proxy >> /etc/profile
+echo export PIP_REQUIRE_VIRTUALENV=true >> /etc/profile
+echo export PIP_RESPECT_VIRTUALENV=true >> /etc/profile
