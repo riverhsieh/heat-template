@@ -1,0 +1,3 @@
+#!/bin/sh
+PID=$(docker inspect --format '{{.State.Pid}}' my_container_id)
+nsenter --target $PID --mount --uts --ipc --net --pid

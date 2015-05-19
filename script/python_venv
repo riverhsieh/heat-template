@@ -1,0 +1,5 @@
+#!/bin/sh
+virtualenv venv
+source venv/bin/activate
+pip --proxy http://10.110.15.60:8080 install python-heatclient
+pip --proxy http://10.110.15.60:8080 install python-novaclient
