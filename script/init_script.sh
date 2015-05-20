@@ -49,6 +49,8 @@ chmod 755 /home/ubuntu/nsenter.sh
 
 cat >/home/ubuntu/docker_enter <<EOF
 #!/bin/sh
+wget -P ~ https://github.com/yeasy/docker_practice/raw/master/_local/.bashrc_docker;
+echo "[ -f ~/.bashrc_docker ] && . ~/.bashrc_docker" >> ~/.bashrc; source ~/.bashrc
 PID=\$(docker inspect --format '{{.State.Pid}}' my_container_id)
 nsenter --target \$PID --mount --uts --ipc --net --pid
 EOF
