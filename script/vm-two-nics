@@ -1,0 +1,19 @@
+
+neutron router-create demo-router
+neutron net-create demo-network-1
+neutron net-create demo-network-2
+neutron subnet-create --name demo-subnet-1 demo-network-1 10.0.0.0/24
+neutron subnet-create --name demo-subnet-2 demo-network-2 10.0.1.0/24
+neutron router-interface-add demo-router demo-subnet-1
+neutron router-interface-add demo-router demo-subnet-2
+neutron router-gateway-set demo-router net04_ext
+neutron net-list
+nova boot --flavor m1.small --image ff5f7be8-4485-4c98-9299-d3675342e1da --nic net-id=2c33efe2-6204-4125-9716-3bc525630016 --nic net-id=aa30627e-c181-4a4b-89bf-5dd7c26c244e --key-name river-key-pair demo-vm
+neutron floatingip-create net04_ext
+neutron floatingip-list
+neutron port-list
+
+echo $'auto eth1\niface eth1 inet dhcp' | sudo tee /etc/network/interfaces.d/eth1.cfg > /dev/null
+sudo ifup eth1
+
+ifconfig eth1
