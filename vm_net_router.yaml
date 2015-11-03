@@ -195,7 +195,7 @@ resources:
             cp nsenter /usr/local/bin
             EOF
             chown ubuntu:ubuntu /home/ubuntu/nsenter.sh
-            chmod 755 /tmp/nsenter.sh
+            chmod 755 /home/ubuntu/nsenter.sh
             . /home/ubuntu/nsenter.sh
             cd /home/ubuntu
             git config --global http.proxy http://proxy_ip
